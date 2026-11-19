@@ -20,20 +20,22 @@ func TestLoadConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if *cfg.Latitude != *example.Latitude || *cfg.Longitude != *example.Longitude || len(cfg.Profile) != 0 || len(example.Profile) != 0 {
+	if cfg.Name != example.Name || *cfg.Latitude != *example.Latitude || *cfg.Longitude != *example.Longitude || len(cfg.Profile) != 0 || len(example.Profile) != 0 {
 		t.Fatal("missing config should use the public example location without a profile")
 	}
 
 	for _, tc := range []struct {
-		json   string
-		wantOK bool
+		json     string
+		wantOK   bool
+		wantName string
 	}{
-		{`{"latitude":0,"longitude":0,"profile":{"Olivo":"nota de prueba"}}`, true},
-		{`{"latitude":0}`, false},
-		{`{"latitude":91,"longitude":0}`, false},
-		{`{"latitude":0,"longitude":181}`, false},
-		{`{"latitude":0,"longitude":null}`, false},
-		{`{`, false},
+		{`{"name":"Mi casa","latitude":0,"longitude":0,"profile":{"Olivo":"nota de prueba"}}`, true, "Mi casa"},
+		{`{"latitude":1.2345,"longitude":-2.3456}`, true, "1.2345, -2.3456"},
+		{`{"latitude":0}`, false, ""},
+		{`{"latitude":91,"longitude":0}`, false, ""},
+		{`{"latitude":0,"longitude":181}`, false, ""},
+		{`{"latitude":0,"longitude":null}`, false, ""},
+		{`{`, false, ""},
 	} {
 		if err := os.WriteFile(path, []byte(tc.json), 0600); err != nil {
 			t.Fatal(err)
@@ -42,7 +44,10 @@ func TestLoadConfig(t *testing.T) {
 		if (err == nil) != tc.wantOK {
 			t.Fatalf("loadConfig(%s): unexpected error result: %v", tc.json, err)
 		}
-		if tc.wantOK && (*cfg.Latitude != 0 || *cfg.Longitude != 0 || cfg.Profile["Olivo"] != "nota de prueba") {
+		if tc.wantOK && cfg.Name != tc.wantName {
+			t.Fatalf("loadConfig(%s): got name %q, want %q", tc.json, cfg.Name, tc.wantName)
+		}
+		if tc.wantOK && tc.wantName == "Mi casa" && (*cfg.Latitude != 0 || *cfg.Longitude != 0 || cfg.Profile["Olivo"] != "nota de prueba") {
 			t.Fatal("local coordinates and profile should override the public defaults")
 		}
 	}
@@ -102,7 +107,7 @@ func TestDailyMaxAndRender(t *testing.T) {
 	a.Hourly.Olive = []*float64{ptr(10), ptr(64), nil}
 
 	var buf bytes.Buffer
-	render(&buf, w, a, nil)
+	render(&buf, w, a, "", nil)
 	out := buf.String()
 	if strings.Contains(out, "Tu perfil") {
 		t.Fatal("public output should not show the profile column")
@@ -120,8 +125,11 @@ func TestDailyMaxAndRender(t *testing.T) {
 
 	a.Hourly.Ragweed = []*float64{ptr(0), ptr(14.2), nil}
 	buf.Reset()
-	render(&buf, w, a, map[string]string{"Ambrosía": "nota de prueba", "Salsola": "nota estacional"})
+	render(&buf, w, a, "Madrid", map[string]string{"Ambrosía": "nota de prueba", "Salsola": "nota estacional"})
 	out = buf.String()
+	if !strings.Contains(out, "Madrid") {
+		t.Fatalf("expected custom location name in header:\n%s", out)
+	}
 	if !strings.Contains(out, "Ambrosía") || !strings.Contains(out, "14.2") {
 		t.Fatalf("expected active Ambrosía row when >=1.0:\n%s", buf.String())
 	}

@@ -32,16 +32,17 @@ En Linux, la app lee `~/.config/tiempo/config.json`. Si tienes definida la varia
 
 Usa [config.example.json](config.example.json) como plantilla para tu archivo local:
 
+- `name`: nombre opcional que se muestra en el encabezado (por ejemplo, `"Madrid"`). Si se omite o queda vacío, se muestran las coordenadas configuradas.
 - `latitude` y `longitude`: coordenadas en grados decimales. Si creas el archivo, indica ambas.
 - `profile`: notas opcionales por nombre de polen, tal como aparece en la tabla. Por ejemplo, `"profile": {"Olivo": "nota de ejemplo"}`. Las notas no cambian los pronósticos ni sus umbrales.
 
-Las coordenadas se envían a Open-Meteo para hacer la consulta. Las notas solo se leen y muestran localmente. Si incluyes datos sensibles, mantén el archivo fuera de Git, dale permisos `600` y evita compartir capturas que los muestren.
+Las coordenadas se envían a Open-Meteo para hacer la consulta. El nombre y las notas solo se leen y muestran localmente. Si incluyes datos sensibles, mantén el archivo fuera de Git, dale permisos `600` y evita compartir capturas que los muestren.
 
 ## Fuentes y límites
 
 Los pronósticos provienen de [Open-Meteo](https://open-meteo.com/). Los datos de polen y calidad del aire se basan en [CAMS](https://open-meteo.com/en/docs/air-quality-api) y su cobertura no siempre abarca los siete días. La tabla usa `—` para los valores diarios que no están disponibles. Si falla la consulta de calidad del aire, la app avisa y sigue mostrando el tiempo.
 
-Puedes consultar otras coordenadas, pero **el encabezado sigue diciendo «Totana (Murcia)»**, la zona horaria sigue siendo `Europe/Madrid` y los avisos estacionales siguen el calendario de REAREMUR para Murcia.
+Puedes consultar otras coordenadas y personalizar `name`, pero la zona horaria sigue siendo `Europe/Madrid` y los avisos estacionales siguen el calendario de REAREMUR para Murcia.
 
 ## Pruebas
 

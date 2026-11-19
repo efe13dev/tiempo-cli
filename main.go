@@ -28,6 +28,7 @@ const (
 )
 
 type config struct {
+	Name      string            `json:"name"`
 	Latitude  *float64          `json:"latitude"`
 	Longitude *float64          `json:"longitude"`
 	Profile   map[string]string `json:"profile"`
@@ -38,7 +39,7 @@ func loadConfig(path string) (config, error) {
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		lat, lon := 37.7710, -1.5002
-		return config{Latitude: &lat, Longitude: &lon}, nil
+		return config{Name: "TOTANA (Murcia)", Latitude: &lat, Longitude: &lon}, nil
 	}
 	if err != nil {
 		return cfg, err
@@ -49,6 +50,10 @@ func loadConfig(path string) (config, error) {
 	if cfg.Latitude == nil || cfg.Longitude == nil ||
 		math.Abs(*cfg.Latitude) > 90 || math.Abs(*cfg.Longitude) > 180 {
 		return cfg, fmt.Errorf("latitude y longitude son obligatorias y deben estar en [-90, 90] y [-180, 180]")
+	}
+	cfg.Name = strings.TrimSpace(cfg.Name)
+	if cfg.Name == "" {
+		cfg.Name = fmt.Sprintf("%.4f, %.4f", *cfg.Latitude, *cfg.Longitude)
 	}
 	return cfg, nil
 }
@@ -382,11 +387,14 @@ func padL(s string, w int) string {
 	return strings.Repeat(" ", d) + s
 }
 
-func render(out io.Writer, w WeatherResp, a AirResp, profile map[string]string) {
+func render(out io.Writer, w WeatherResp, a AirResp, name string, profile map[string]string) {
 	const colW = 45
 	totalW := colW*2 + 1
 
-	nowHeader := "TOTANA (Murcia)"
+	nowHeader := name
+	if nowHeader == "" {
+		nowHeader = "TOTANA (Murcia)"
+	}
 	if len(w.Current.Time) >= 10 {
 		if t, err := time.Parse("2006-01-02", w.Current.Time[:10]); err == nil {
 			nowHeader += fmt.Sprintf(" · %s %02d %s %s", weekdaysES[t.Weekday()], t.Day(), monthsES[t.Month()], formatClock(w.Current.Time))
@@ -634,5 +642,5 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Aviso: sin datos de calidad del aire/alérgenos (%v)\n", aErr)
 	}
 
-	render(os.Stdout, w, a, cfg.Profile)
+	render(os.Stdout, w, a, cfg.Name, cfg.Profile)
 }
